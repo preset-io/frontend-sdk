@@ -1,7 +1,7 @@
 {
-  "name": "@preset-io/frontend-sdk",
+  "name": "@preset-sdk/embedded",
   "version": "0.1.0",
-  "description": "Frontend SDK for integrating Preset into your own application",
+  "description": "Frontend SDK for embedding Preset data analytics into your own application",
   "access": "public",
   "keywords": [
     "preset",
