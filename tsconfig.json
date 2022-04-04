@@ -9,6 +9,7 @@
     "target": "es6",
     "lib": ["DOM", "ESNext"],
     "module": "esnext",
+    "types": [],
 
     // output
     "outDir": "./dist",

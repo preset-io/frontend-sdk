@@ -4,7 +4,8 @@ export const DEFAULT_TOKEN_EXP_MS = 300000 // (5 min) used only when parsing gue
 
 // when do we refresh the guest token?
 export function getGuestTokenRefreshTiming(currentGuestToken: string) {
-  const parsedJwt = JSON.parse(Buffer.from(currentGuestToken.split('.')[1], 'base64').toString());
+  // atob converts a string from base64 https://developer.mozilla.org/en-US/docs/Web/API/atob
+  const parsedJwt = JSON.parse(atob(currentGuestToken.split('.')[1]).toString());
   // if exp is int, it is in seconds, but Date() takes milliseconds
   const exp = new Date(/[^0-9\.]/g.test(parsedJwt.exp) ? parsedJwt.exp : parseFloat(parsedJwt.exp) * 1000);
   const isValidDate = exp.toString() !== 'Invalid Date';
