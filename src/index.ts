@@ -86,6 +86,7 @@ export async function embedDashboard({
       iframe.sandbox.add("allow-downloads"); // for downloading charts as image
       iframe.sandbox.add("allow-top-navigation"); // for links to open
       iframe.sandbox.add("allow-forms"); // for forms to submit
+      iframe.sandbox.add("allow-popups"); // for exporting charts as csv 
 
       // add the event listener before setting src, to be 100% sure that we capture the load event
       iframe.addEventListener('load', () => {
