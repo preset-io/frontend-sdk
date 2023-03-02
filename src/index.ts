@@ -96,6 +96,7 @@ export async function embedDashboard({
       });
 
       iframe.src = `${supersetDomain}/embedded/${id}${dashboardConfig}`;
+       //@ts-ignore
       mountPoint.replaceChildren(iframe);
       log('placed the iframe')
     });
@@ -119,6 +120,7 @@ export async function embedDashboard({
 
   function unmount() {
     log('unmounting');
+     //@ts-ignore
     mountPoint.replaceChildren();
   }
 
