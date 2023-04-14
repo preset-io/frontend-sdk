@@ -1,6 +1,7 @@
 import { Switchboard } from '@superset-ui/switchboard';
 import { IFRAME_COMMS_MESSAGE_TYPE } from './const';
 import { getGuestTokenRefreshTiming } from './guestTokenRefresh';
+import { applyReplaceChildrenPolyfill } from './polyfills';
 
 /**
  * The function to fetch a guest token from your Host App's backend server.
@@ -57,6 +58,8 @@ export async function embedDashboard({
   }
 
   log('embedding');
+  // Polyfill replaceChildren
+  applyReplaceChildrenPolyfill()
 
   function calculateConfig() {
     let configNumber = 0
@@ -96,7 +99,7 @@ export async function embedDashboard({
       });
 
       iframe.src = `${supersetDomain}/embedded/${id}${dashboardConfig}`;
-      mountPoint.replaceChildren(iframe);
+      mountPoint?.replaceChildren(iframe);
       log('placed the iframe')
     });
   }
@@ -119,7 +122,7 @@ export async function embedDashboard({
 
   function unmount() {
     log('unmounting');
-    mountPoint.replaceChildren();
+    mountPoint?.replaceChildren();
   }
 
   const getScrollSize = () => ourPort.get<Size>('getScrollSize');
