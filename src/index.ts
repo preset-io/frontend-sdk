@@ -61,6 +61,10 @@ export async function embedDashboard({
   // Polyfill replaceChildren
   applyReplaceChildrenPolyfill()
 
+  if (supersetDomain.endsWith("/")) {
+    supersetDomain = supersetDomain.slice(0, -1);
+  }
+
   function calculateConfig() {
     let configNumber = 0
     if(dashboardUiConfig) {
