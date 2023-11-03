@@ -131,17 +131,19 @@ export async function embedDashboard({
   ourPort.emit('guestToken', { guestToken });
   log('sent guest token');
 
+  let refreshGuestTokenInterval;
   async function refreshGuestToken() {
     const newGuestToken = await fetchGuestToken();
     ourPort.emit('guestToken', { guestToken: newGuestToken });
-    setTimeout(refreshGuestToken, getGuestTokenRefreshTiming(newGuestToken));
+    refreshGuestTokenInterval = setTimeout(refreshGuestToken, getGuestTokenRefreshTiming(newGuestToken));
   }
 
-  setTimeout(refreshGuestToken, getGuestTokenRefreshTiming(guestToken));
+  refreshGuestTokenInterval = setTimeout(refreshGuestToken, getGuestTokenRefreshTiming(guestToken));
 
   function unmount() {
     log('unmounting');
     mountPoint?.replaceChildren();
+    clearInterval(refreshGuestTokenInterval);
   }
 
   const getScrollSize = () => ourPort.get<Size>('getScrollSize');
