@@ -18,9 +18,10 @@ export type UiConfigType = {
   hideTab?: boolean
   hideChartControls?: boolean
   filters?: {
-    [key: string]: boolean | undefined
+    [key: string]: boolean | Record<string, string> | undefined
     visible?: boolean
     expanded?: boolean
+    urlParams?: Record<string, string>
   }
 }
 
@@ -89,17 +90,24 @@ export async function embedDashboard({
     return configNumber
   }
 
+  function entriesToQS(entries: [string, unknown][]) {
+    return entries.map(([key, value]) => `${key}=${value}`).join('&');
+  }
+
   async function mountIframe(): Promise<Switchboard> {
     return new Promise(resolve => {
       const iframe = document.createElement('iframe');
-      const dashboardConfig = dashboardUiConfig ? `?uiConfig=${calculateConfig()}` : ""
+      const dashboardConfig = dashboardUiConfig ? `uiConfig=${calculateConfig()}` : ""
       const filterConfig = dashboardUiConfig?.filters || {}
-      const filterConfigKeys = Object.keys(filterConfig)
-      const filterConfigUrlParams = filterConfigKeys.length > 0
-        ? "&"
-        + filterConfigKeys
-          .map(key => DASHBOARD_UI_FILTER_CONFIG_URL_PARAM_KEY[key] + '=' + filterConfig[key]).join('&')
-        : ""
+      const filterConfigKeys = Object.entries(filterConfig).filter(
+        ([uiKey]) => DASHBOARD_UI_FILTER_CONFIG_URL_PARAM_KEY[uiKey],
+      );
+      const filterConfigUrlParams =
+        filterConfigKeys.length > 0 ? entriesToQS(filterConfigKeys) : null;
+
+      const filterConfigCustomUrlParams = filterConfig.urlParams
+        ? entriesToQS(Object.entries(filterConfig.urlParams))
+        : null;
 
       // setup the iframe's sandbox configuration
       iframe.sandbox.add("allow-same-origin"); // needed for postMessage to work
@@ -117,7 +125,10 @@ export async function embedDashboard({
         resolve(switchboard);
       });
 
-      iframe.src = `${supersetDomain}/embedded/${id}${dashboardConfig}${filterConfigUrlParams}`;
+      const qs = [dashboardConfig, filterConfigUrlParams, filterConfigCustomUrlParams].filter(Boolean).join('&');
+      const qsSuffix = qs ? `?${qs}` : '';
+
+      iframe.src = `${supersetDomain}/embedded/${id}${qsSuffix}`;
       mountPoint?.replaceChildren(iframe);
       log('placed the iframe')
     });
@@ -131,7 +142,7 @@ export async function embedDashboard({
   ourPort.emit('guestToken', { guestToken });
   log('sent guest token');
 
-  let refreshGuestTokenInterval;
+  let refreshGuestTokenInterval: ReturnType<typeof setInterval>;
   
   async function refreshGuestToken() {
     const newGuestToken = await fetchGuestToken();
