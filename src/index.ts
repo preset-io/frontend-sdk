@@ -99,9 +99,9 @@ export async function embedDashboard({
       const iframe = document.createElement('iframe');
       const dashboardConfig = dashboardUiConfig ? `uiConfig=${calculateConfig()}` : ""
       const filterConfig = dashboardUiConfig?.filters || {}
-      const filterConfigKeys = Object.entries(filterConfig).filter(
-        ([uiKey]) => DASHBOARD_UI_FILTER_CONFIG_URL_PARAM_KEY[uiKey],
-      );
+      const filterConfigKeys = Object.entries(filterConfig).map(
+        ([uiKey, uiValue]) => [DASHBOARD_UI_FILTER_CONFIG_URL_PARAM_KEY[uiKey], uiValue]
+      ).filter(([key]) => key) as [string, unknown][];
       const filterConfigUrlParams =
         filterConfigKeys.length > 0 ? entriesToQS(filterConfigKeys) : null;
 
