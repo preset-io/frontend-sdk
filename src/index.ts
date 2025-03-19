@@ -31,7 +31,7 @@ export type EmbedDashboardParams = {
   /** The id provided by the embed configuration UI in Superset */
   id: string
   /** The domain where Superset can be located, with protocol, such as: https://abc123.us1a.preset.io */
-  supersetDomain: string // todo remove this option? after migrating to the preset frontend sdk
+  supersetDomain: string
   /** The html element within which to mount the iframe */
   mountPoint: HTMLElement
   /** A function to fetch a guest token from the Host App's backend server */
@@ -40,6 +40,12 @@ export type EmbedDashboardParams = {
   dashboardUiConfig?: UiConfigType
   /** Enables extra logging */
   debug?: boolean
+  /** The iframe title attribute */
+  iframeTitle?: string
+  /** additional iframe sandbox attributes ex (allow-top-navigation, allow-popups-to-escape-sandbox) **/
+  iframeSandboxExtras?: string[]
+  /** force a specific refererPolicy to be used in the iframe request **/
+  referrerPolicy?: ReferrerPolicy
 }
 
 export type Size = {
@@ -60,7 +66,10 @@ export async function embedDashboard({
   mountPoint,
   fetchGuestToken,
   dashboardUiConfig,
-  debug = false
+  debug = false,
+  iframeTitle = "Embedded Dashboard",
+  iframeSandboxExtras = [],
+  referrerPolicy,
 }: EmbedDashboardParams): Promise<EmbeddedDashboard> {
   function log(...info: unknown[]) {
     if (debug) {
@@ -112,7 +121,15 @@ export async function embedDashboard({
       iframe.sandbox.add("allow-downloads"); // for downloading charts as image
       iframe.sandbox.add("allow-top-navigation"); // for links to open
       iframe.sandbox.add("allow-forms"); // for forms to submit
-      iframe.sandbox.add("allow-popups"); // for exporting charts as csv 
+      iframe.sandbox.add("allow-popups"); // for exporting charts as csv
+      // additional sandbox props
+      iframeSandboxExtras.forEach((key: string) => {
+        iframe.sandbox.add(key);
+      });
+      // force a specific refererPolicy to be used in the iframe request
+      if(referrerPolicy) {
+        iframe.referrerPolicy = referrerPolicy;
+      }
 
       // add the event listener before setting src, to be 100% sure that we capture the load event
       iframe.addEventListener('load', () => {
@@ -122,6 +139,7 @@ export async function embedDashboard({
       });
 
       iframe.src = `${supersetDomain}/embedded/${id}${urlParamsString}`;
+      iframe.title = iframeTitle;
       mountPoint?.replaceChildren(iframe);
       log('placed the iframe')
     });
