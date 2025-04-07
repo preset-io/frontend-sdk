@@ -17,6 +17,7 @@ export type UiConfigType = {
   hideTitle?: boolean
   hideTab?: boolean
   hideChartControls?: boolean
+  emitDataMasks?: boolean
   filters?: {
     [key: string]: boolean | undefined
     visible?: boolean
@@ -52,9 +53,22 @@ export type Size = {
   width: number, height: number
 }
 
+export type ObserveDataMaskCallbackFn = (
+  dataMask: Record<string, any> & {
+    crossFiltersChanged: boolean
+    nativeFiltersChanged: boolean
+  }
+) => void
+
 export type EmbeddedDashboard = {
   getScrollSize: () => Promise<Size>
   unmount: () => void
+  getDashboardPermalink: (anchor: string) => Promise<string>
+  getActiveTabs: () => Promise<string[]>
+  observeDataMask: (
+    callbackFn: ObserveDataMaskCallbackFn
+  ) => void
+  getDataMask: () => Record<string, any>
 }
 
 /**
@@ -96,6 +110,9 @@ export async function embedDashboard({
       }
       if(dashboardUiConfig.hideChartControls) {
         configNumber += 8
+      }
+      if (dashboardUiConfig.emitDataMasks) {
+        configNumber += 16
       }
     }
     return configNumber
@@ -169,11 +186,24 @@ export async function embedDashboard({
   }
 
   const getScrollSize = () => ourPort.get<Size>('getScrollSize');
-
+  const getDashboardPermalink = (anchor: string) =>
+    ourPort.get<string>('getDashboardPermalink', { anchor })
+  const getActiveTabs = () => ourPort.get<string[]>('getActiveTabs')
+  const getDataMask = () => ourPort.get<Record<string, any>>('getDataMask')
+  const observeDataMask = (
+    callbackFn: ObserveDataMaskCallbackFn
+  ) => {
+    ourPort.start()
+    ourPort.defineMethod('observeDataMask', callbackFn)
+  }
   return {
     getScrollSize,
     unmount,
-  };
+    getDashboardPermalink,
+    getActiveTabs,
+    observeDataMask,
+    getDataMask
+  }
 }
 
 export function _initComms(window: Window, targetOrigin: string, debug = false) {
