@@ -25,7 +25,8 @@ export type UiConfigType = {
   }
   urlParams?: {
     [key: string]: any
-  }
+  };
+  showRowLimitWarning?: boolean;
 }
 
 export type EmbedDashboardParams = {
@@ -114,6 +115,9 @@ export async function embedDashboard({
       }
       if (dashboardUiConfig.emitDataMasks) {
         configNumber += 16
+      }
+      if (dashboardUiConfig.showRowLimitWarning) {
+        configNumber += 32;
       }
     }
     return configNumber
