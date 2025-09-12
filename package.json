@@ -35,7 +35,8 @@
     "last 3 edge versions"
   ],
   "dependencies": {
-    "@superset-ui/switchboard": "^0.20.3"
+    "@superset-ui/switchboard": "^0.20.3",
+    "jwt-decode": "^4.0.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.16.8",
