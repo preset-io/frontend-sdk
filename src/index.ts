@@ -71,6 +71,7 @@ export type EmbeddedDashboard = {
   ) => void
   getDataMask: () => Record<string, any>
   setThemeConfig: (themeConfig: Record<string, any>) => void
+  getChartDataPayloads: (params?: { chartId?: number }) => Promise<Record<string, any>>;
 }
 
 /**
@@ -103,14 +104,14 @@ export async function embedDashboard({
 
   function calculateConfig() {
     let configNumber = 0
-    if(dashboardUiConfig) {
-      if(dashboardUiConfig.hideTitle) {
+    if (dashboardUiConfig) {
+      if (dashboardUiConfig.hideTitle) {
         configNumber += 1
       }
-      if(dashboardUiConfig.hideTab) {
+      if (dashboardUiConfig.hideTab) {
         configNumber += 2
       }
-      if(dashboardUiConfig.hideChartControls) {
+      if (dashboardUiConfig.hideChartControls) {
         configNumber += 8
       }
       if (dashboardUiConfig.emitDataMasks) {
@@ -126,14 +127,14 @@ export async function embedDashboard({
   async function mountIframe(): Promise<Switchboard> {
     return new Promise(resolve => {
       const iframe = document.createElement('iframe');
-      const dashboardConfigUrlParams = dashboardUiConfig ? {uiConfig: `${calculateConfig()}`} : undefined;
+      const dashboardConfigUrlParams = dashboardUiConfig ? { uiConfig: `${calculateConfig()}` } : undefined;
       const filterConfig = dashboardUiConfig?.filters || {}
       const filterConfigKeys = Object.keys(filterConfig)
       const filterConfigUrlParams = Object.fromEntries(filterConfigKeys.map(
-          key => [DASHBOARD_UI_FILTER_CONFIG_URL_PARAM_KEY[key], filterConfig[key]]))
+        key => [DASHBOARD_UI_FILTER_CONFIG_URL_PARAM_KEY[key], filterConfig[key]]))
 
       // Allow url query parameters from dashboardUiConfig.urlParams to override the ones from filterConfig
-      const urlParams = {...dashboardConfigUrlParams, ...filterConfigUrlParams, ...dashboardUiConfig?.urlParams}
+      const urlParams = { ...dashboardConfigUrlParams, ...filterConfigUrlParams, ...dashboardUiConfig?.urlParams }
       const urlParamsString = Object.keys(urlParams).length ? '?' + new URLSearchParams(urlParams).toString() : ''
 
       // setup the iframe's sandbox configuration
@@ -149,7 +150,7 @@ export async function embedDashboard({
         iframe.sandbox.add(key);
       });
       // force a specific refererPolicy to be used in the iframe request
-      if(referrerPolicy) {
+      if (referrerPolicy) {
         iframe.referrerPolicy = referrerPolicy;
       }
 
@@ -201,6 +202,10 @@ export async function embedDashboard({
     ourPort.start()
     ourPort.defineMethod('observeDataMask', callbackFn)
   }
+
+  const getChartDataPayloads = (params?: { chartId?: number }) =>
+    ourPort.get<Record<string, any>>('getChartDataPayloads', params);
+
   const setThemeConfig = async (themeConfig: Record<string, any>): Promise<void> => {
     try {
       ourPort.emit('setThemeConfig', { themeConfig });
@@ -219,7 +224,8 @@ export async function embedDashboard({
     getActiveTabs,
     observeDataMask,
     getDataMask,
-    setThemeConfig
+    setThemeConfig,
+    getChartDataPayloads
   }
 }
 
