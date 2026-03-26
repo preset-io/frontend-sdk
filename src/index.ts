@@ -61,6 +61,8 @@ export type ObserveDataMaskCallbackFn = (
   }
 ) => void
 
+export type ThemeMode = 'default' | 'dark' | 'system';
+
 export type EmbeddedDashboard = {
   getScrollSize: () => Promise<Size>
   unmount: () => void
@@ -71,6 +73,7 @@ export type EmbeddedDashboard = {
   ) => void
   getDataMask: () => Record<string, any>
   setThemeConfig: (themeConfig: Record<string, any>) => void
+  setThemeMode: (mode: ThemeMode) => void
   getChartDataPayloads: (params?: { chartId?: number }) => Promise<Record<string, any>>;
 }
 
@@ -217,6 +220,19 @@ export async function embedDashboard({
       throw error;
     }
   };
+
+  const setThemeMode = (mode: ThemeMode): void => {
+    try {
+      ourPort.emit('setThemeMode', { mode });
+      log(`Theme mode set to: ${mode}`);
+    } catch (error) {
+      log(
+        'Error sending theme mode. Ensure the iframe side implements the "setThemeMode" method.',
+      );
+      throw error;
+    }
+  };
+
   return {
     getScrollSize,
     unmount,
@@ -225,6 +241,7 @@ export async function embedDashboard({
     observeDataMask,
     getDataMask,
     setThemeConfig,
+    setThemeMode,
     getChartDataPayloads
   }
 }
