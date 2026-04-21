@@ -32,6 +32,7 @@ function logError(...args) {
       log(`published ${version} to npm`);
     } catch (err) {
       console.error(String(err.stdout));
+      console.error(String(err.stderr));
       logError('Encountered an error, details should be above');
       process.exitCode = 1;
     }
