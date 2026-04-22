@@ -8,16 +8,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "22"
           registry-url: 'https://registry.npmjs.org'
       - name: release
         run: |
           npm ci
-          npm config set //registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN
           npm run ci:release
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
