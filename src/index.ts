@@ -1,7 +1,7 @@
 import { Switchboard } from '@superset-ui/switchboard';
 import {
   DASHBOARD_UI_FILTER_CONFIG_URL_PARAM_KEY,
-  IFRAME_COMMS_MESSAGE_TYPE
+  IFRAME_COMMS_MESSAGE_TYPE,
 } from './const';
 import { getGuestTokenRefreshTiming } from './guestTokenRefresh';
 import { applyReplaceChildrenPolyfill } from './polyfills';
@@ -14,68 +14,72 @@ import { applyReplaceChildrenPolyfill } from './polyfills';
 export type GuestTokenFetchFn = () => Promise<string>;
 
 export type UiConfigType = {
-  hideTitle?: boolean
-  hideTab?: boolean
-  hideChartControls?: boolean
-  emitDataMasks?: boolean
+  hideTitle?: boolean;
+  hideTab?: boolean;
+  hideChartControls?: boolean;
+  emitDataMasks?: boolean;
   filters?: {
-    [key: string]: boolean | undefined
-    visible?: boolean
-    expanded?: boolean
-  }
+    [key: string]: boolean | undefined;
+    visible?: boolean;
+    expanded?: boolean;
+  };
   urlParams?: {
-    [key: string]: any
+    [key: string]: any;
   };
   showRowLimitWarning?: boolean;
-}
+};
 
 export type EmbedDashboardParams = {
   /** The id provided by the embed configuration UI in Superset */
-  id: string
+  id: string;
   /** The domain where Superset can be located, with protocol, such as: https://abc123.us1a.preset.io */
-  supersetDomain: string
+  supersetDomain: string;
   /** The html element within which to mount the iframe */
-  mountPoint: HTMLElement
+  mountPoint: HTMLElement;
   /** A function to fetch a guest token from the Host App's backend server */
-  fetchGuestToken: GuestTokenFetchFn
+  fetchGuestToken: GuestTokenFetchFn;
   /** The dashboard UI config: hideTitle, hideTab, hideChartControls, filters.visible, filters.expanded **/
-  dashboardUiConfig?: UiConfigType
+  dashboardUiConfig?: UiConfigType;
   /** Enables extra logging */
-  debug?: boolean
+  debug?: boolean;
   /** The iframe title attribute */
-  iframeTitle?: string
+  iframeTitle?: string;
   /** additional iframe sandbox attributes ex (allow-top-navigation, allow-popups-to-escape-sandbox) **/
-  iframeSandboxExtras?: string[]
+  iframeSandboxExtras?: string[];
+  /** Additional Permissions Policy features for the iframe's `allow` attribute (e.g., ['camera', 'microphone']). `fullscreen` and `clipboard-write` are granted by default. **/
+  iframeAllowExtras?: string[];
   /** force a specific refererPolicy to be used in the iframe request **/
-  referrerPolicy?: ReferrerPolicy
-}
+  referrerPolicy?: ReferrerPolicy;
+};
 
 export type Size = {
-  width: number, height: number
-}
+  width: number;
+  height: number;
+};
 
 export type ObserveDataMaskCallbackFn = (
   dataMask: Record<string, any> & {
-    crossFiltersChanged: boolean
-    nativeFiltersChanged: boolean
-  }
-) => void
+    crossFiltersChanged: boolean;
+    nativeFiltersChanged: boolean;
+  },
+) => void;
 
 export type ThemeMode = 'default' | 'dark' | 'system';
 
 export type EmbeddedDashboard = {
-  getScrollSize: () => Promise<Size>
-  unmount: () => void
-  getDashboardPermalink: (anchor: string) => Promise<string>
-  getActiveTabs: () => Promise<string[]>
+  getScrollSize: () => Promise<Size>;
+  unmount: () => void;
+  getDashboardPermalink: (anchor: string) => Promise<string>;
+  getActiveTabs: () => Promise<string[]>;
   observeDataMask: (
-    callbackFn: ObserveDataMaskCallbackFn
-  ) => void
-  getDataMask: () => Record<string, any>
-  setThemeConfig: (themeConfig: Record<string, any>) => void
-  setThemeMode: (mode: ThemeMode) => void
+    callbackFn: ObserveDataMaskCallbackFn,
+  ) => void;
+  getDataMask: () => Promise<Record<string, any>>;
+  getChartStates: () => Promise<Record<string, any>>;
   getChartDataPayloads: (params?: { chartId?: number }) => Promise<Record<string, any>>;
-}
+  setThemeConfig: (themeConfig: Record<string, any>) => void;
+  setThemeMode: (mode: ThemeMode) => void;
+};
 
 /**
  * Embeds a Superset dashboard into the page using an iframe.
@@ -87,8 +91,9 @@ export async function embedDashboard({
   fetchGuestToken,
   dashboardUiConfig,
   debug = false,
-  iframeTitle = "Embedded Dashboard",
+  iframeTitle = 'Embedded Dashboard',
   iframeSandboxExtras = [],
+  iframeAllowExtras = [],
   referrerPolicy,
 }: EmbedDashboardParams): Promise<EmbeddedDashboard> {
   function log(...info: unknown[]) {
@@ -101,53 +106,65 @@ export async function embedDashboard({
   // Polyfill replaceChildren
   applyReplaceChildrenPolyfill()
 
-  if (supersetDomain.endsWith("/")) {
+  if (supersetDomain.endsWith('/')) {
     supersetDomain = supersetDomain.slice(0, -1);
   }
 
   function calculateConfig() {
-    let configNumber = 0
+    let configNumber = 0;
     if (dashboardUiConfig) {
       if (dashboardUiConfig.hideTitle) {
-        configNumber += 1
+        configNumber += 1;
       }
       if (dashboardUiConfig.hideTab) {
-        configNumber += 2
+        configNumber += 2;
       }
       if (dashboardUiConfig.hideChartControls) {
-        configNumber += 8
+        configNumber += 8;
       }
       if (dashboardUiConfig.emitDataMasks) {
-        configNumber += 16
+        configNumber += 16;
       }
       if (dashboardUiConfig.showRowLimitWarning) {
         configNumber += 32;
       }
     }
-    return configNumber
+    return configNumber;
   }
 
   async function mountIframe(): Promise<Switchboard> {
     return new Promise(resolve => {
       const iframe = document.createElement('iframe');
-      const dashboardConfigUrlParams = dashboardUiConfig ? { uiConfig: `${calculateConfig()}` } : undefined;
-      const filterConfig = dashboardUiConfig?.filters || {}
-      const filterConfigKeys = Object.keys(filterConfig)
-      const filterConfigUrlParams = Object.fromEntries(filterConfigKeys.map(
-        key => [DASHBOARD_UI_FILTER_CONFIG_URL_PARAM_KEY[key], filterConfig[key]]))
+      const dashboardConfigUrlParams = dashboardUiConfig
+        ? { uiConfig: `${calculateConfig()}` }
+        : undefined;
+      const filterConfig = dashboardUiConfig?.filters || {};
+      const filterConfigKeys = Object.keys(filterConfig);
+      const filterConfigUrlParams = Object.fromEntries(
+        filterConfigKeys.map(key => [
+          DASHBOARD_UI_FILTER_CONFIG_URL_PARAM_KEY[key],
+          filterConfig[key],
+        ]),
+      );
 
       // Allow url query parameters from dashboardUiConfig.urlParams to override the ones from filterConfig
-      const urlParams = { ...dashboardConfigUrlParams, ...filterConfigUrlParams, ...dashboardUiConfig?.urlParams }
-      const urlParamsString = Object.keys(urlParams).length ? '?' + new URLSearchParams(urlParams).toString() : ''
+      const urlParams = {
+        ...dashboardConfigUrlParams,
+        ...filterConfigUrlParams,
+        ...dashboardUiConfig?.urlParams,
+      };
+      const urlParamsString = Object.keys(urlParams).length
+        ? '?' + new URLSearchParams(urlParams).toString()
+        : '';
 
-      // setup the iframe's sandbox configuration
-      iframe.sandbox.add("allow-same-origin"); // needed for postMessage to work
-      iframe.sandbox.add("allow-scripts"); // obviously the iframe needs scripts
-      iframe.sandbox.add("allow-presentation"); // for fullscreen charts
-      iframe.sandbox.add("allow-downloads"); // for downloading charts as image
-      iframe.sandbox.add("allow-top-navigation"); // for links to open
-      iframe.sandbox.add("allow-forms"); // for forms to submit
-      iframe.sandbox.add("allow-popups"); // for exporting charts as csv
+      // set up the iframe's sandbox configuration
+      iframe.sandbox.add('allow-same-origin'); // needed for postMessage to work
+      iframe.sandbox.add('allow-scripts'); // obviously the iframe needs scripts
+      iframe.sandbox.add('allow-presentation'); // for fullscreen charts
+      iframe.sandbox.add('allow-downloads'); // for downloading charts as image
+      iframe.sandbox.add('allow-top-navigation'); // for links to open
+      iframe.sandbox.add('allow-forms'); // for forms to submit
+      iframe.sandbox.add('allow-popups'); // for exporting charts as csv
       // additional sandbox props
       iframeSandboxExtras.forEach((key: string) => {
         iframe.sandbox.add(key);
@@ -166,12 +183,21 @@ export async function embedDashboard({
 
       iframe.src = `${supersetDomain}/embedded/${id}${urlParamsString}`;
       iframe.title = iframeTitle;
+      iframe.style.background = 'transparent';
+      // Permissions Policy features the embedded dashboard relies on. Modern
+      // browsers gate these APIs on the iframe's `allow` attribute regardless
+      // of sandbox flags, so we include them by default. Host apps can extend
+      // the list via `iframeAllowExtras`.
+      const allowFeatures = Array.from(
+        new Set(['fullscreen', 'clipboard-write', ...iframeAllowExtras]),
+      );
+      iframe.setAttribute('allow', allowFeatures.join('; '));
       mountPoint?.replaceChildren(iframe);
-      log('placed the iframe')
+      log('placed the iframe');
     });
   }
 
-  const [guestToken, ourPort] = await Promise.all([
+  const [guestToken, ourPort]: [string, Switchboard] = await Promise.all([
     fetchGuestToken(),
     mountIframe(),
   ]);
@@ -196,18 +222,18 @@ export async function embedDashboard({
 
   const getScrollSize = () => ourPort.get<Size>('getScrollSize');
   const getDashboardPermalink = (anchor: string) =>
-    ourPort.get<string>('getDashboardPermalink', { anchor })
-  const getActiveTabs = () => ourPort.get<string[]>('getActiveTabs')
-  const getDataMask = () => ourPort.get<Record<string, any>>('getDataMask')
-  const observeDataMask = (
-    callbackFn: ObserveDataMaskCallbackFn
-  ) => {
-    ourPort.start()
-    ourPort.defineMethod('observeDataMask', callbackFn)
-  }
-
+    ourPort.get<string>('getDashboardPermalink', { anchor });
+  const getActiveTabs = () => ourPort.get<string[]>('getActiveTabs');
+  const getDataMask = () => ourPort.get<Record<string, any>>('getDataMask');
+  const getChartStates = () => ourPort.get<Record<string, any>>('getChartStates');
   const getChartDataPayloads = (params?: { chartId?: number }) =>
     ourPort.get<Record<string, any>>('getChartDataPayloads', params);
+  const observeDataMask = (
+    callbackFn: ObserveDataMaskCallbackFn,
+  ) => {
+    ourPort.start();
+    ourPort.defineMethod('observeDataMask', callbackFn);
+  };
 
   const setThemeConfig = async (themeConfig: Record<string, any>): Promise<void> => {
     try {
@@ -240,10 +266,11 @@ export async function embedDashboard({
     getActiveTabs,
     observeDataMask,
     getDataMask,
+    getChartStates,
+    getChartDataPayloads,
     setThemeConfig,
     setThemeMode,
-    getChartDataPayloads
-  }
+  };
 }
 
 export function _initComms(window: Window, targetOrigin: string, debug = false) {
