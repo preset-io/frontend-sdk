@@ -14,6 +14,8 @@ jobs:
         with:
           node-version: "16"
           registry-url: 'https://registry.npmjs.org'
+      - name: upgrade npm for Trusted Publishers support
+        run: npm install -g npm@latest
       - name: release
         run: |
           npm ci
