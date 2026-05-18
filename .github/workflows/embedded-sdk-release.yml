@@ -8,18 +8,21 @@ on:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    permissions:
-      id-token: write
-      contents: read
+    # TODO: Fix Trusted Publishers integration
+    # Currently not working well with Node 22, still used by Superset
+    # permissions:
+    #   id-token: write
+    #   contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           registry-url: 'https://registry.npmjs.org'
-      - name: upgrade npm for Trusted Publishers support
-        run: npm install -g npm@latest
       - name: release
         run: |
           npm ci
+          npm config set //registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN
           npm run ci:release
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
